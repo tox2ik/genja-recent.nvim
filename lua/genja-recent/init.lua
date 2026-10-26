@@ -37,16 +37,15 @@ local entries = {}
 ---@type table<string, genja-recent.Entry> uses since the last write, merged into the file then
 local pending = {}
 local loaded = false
+---@type uv.uv_timer_t|nil flushes every `flush_minutes`
+local timer = nil
 local is_win = vim.fn.has('win32') == 1
 
 ---Lookup key for `path`: case-insensitive on Windows.
 ---@param path string normalized
 ---@return string
 local function key_of(path)
-	if is_win then
-		return path:lower()
-	end
-	return path
+	return (is_win and path:lower() or path)
 end
 
 ---Entries from the data file.
@@ -105,11 +104,8 @@ end
 ---@param kind 'view'|'edit'
 ---@param now integer
 local function bump(tbl, key, path, kind, now)
+	tbl[key] = tbl[key] or { path = path, views = 0, edits = 0, last = 0 }
 	local e = tbl[key]
-	if not e then
-		e = { path = path, views = 0, edits = 0, last = 0 }
-		tbl[key] = e
-	end
 	if kind == 'edit' then
 		e.edits = e.edits + 1
 	else
@@ -213,13 +209,10 @@ end
 function M.list(opts)
 	opts = opts or {}
 	load()
-	local root = nil
-	if opts.root then
-		root = vim.fs.normalize(opts.root)
-	end
+	local root = opts.root and vim.fs.normalize(opts.root)
 	local paths = {}
 	for _, e in ipairs(sorted(entries)) do
-		if (root == nil or under(e.path, root)) and vim.uv.fs_stat(e.path) then
+		if (not root or under(e.path, root)) and vim.uv.fs_stat(e.path) then
 			table.insert(paths, e.path)
 		end
 	end
@@ -242,7 +235,10 @@ function M.setup(opts)
 		group = group,
 		callback = function() M.flush() end,
 	})
-	local timer = assert(vim.uv.new_timer())
+	if timer then
+		timer:close() -- setup() again: one timer, not two
+	end
+	timer = assert(vim.uv.new_timer())
 	local ms = M.config.flush_minutes * 60 * 1000
 	timer:start(ms, ms, vim.schedule_wrap(M.flush))
 	-- the buffer shown before the plugin loaded (VeryLazy)
