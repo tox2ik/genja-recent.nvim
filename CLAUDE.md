@@ -2,7 +2,7 @@
 
 Recent files with own rules, ranked by frecency. Loaded from disk by the
 config's `../../lua/lazyp/new/genja-recent.lua` (`VeryLazy`). The picker is
-the config's `lua/genja/recent.lua` on `<C-F1>`. Read README.md.
+the config's `lua/genja/ext/recent.lua` on `<C-F1>`. Read README.md.
 
 How this file is kept: one heading per feature, one bullet per decision.
 Unmarked bullets were stated by jaro. `(inferred)` marks Claude's reading of the
