@@ -7,7 +7,7 @@ recently). Edits weigh more than views.
 
 ```lua
 {
-	dir = vim.fn.stdpath('config') .. '/plug-wip/genja-recent.nvim',
+	'tox2ik/genja-recent.nvim',
 	event = 'VeryLazy',
 	opts = {
 		edit_weight = 2,
